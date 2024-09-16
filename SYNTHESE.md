@@ -1,3 +1,13 @@
+# Récapitulatif des commandes clés
+- Créer un projet : ``symfony new my_project --webapp``
+- Démarrer le serveur : ``symfony server:start``
+- Créer une base de données : ``php bin/console doctrine:database:create``
+- Créer une entité : ``php bin/console make:entity``
+- Créer une migration : ``php bin/console make:migration``
+- Appliquer les migrations : ``php bin/console doctrine:migrations:migrate``
+- Créer un contrôleur : ``php bin/console make:controller``
+- Nettoyer le cache : ``php bin/console cache:clear``
+
 # Étapes de création du projet Symfony
 ## 1. Créer un nouveau projet Symfony
 Utiliser Symfony CLI pour créer un projet. Cela configure un environnement de base avec les dépendances nécessaires.
