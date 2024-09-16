@@ -31,7 +31,7 @@ Configurer les paramètres de connexion à la base de données dans le fichier `
 DATABASE_URL="mysql://db_user:db_password@127.0.0.1:3306/db_name?serverVersion=8.0"
 ````
 > [!IMPORTANT]
-> ATTENTION : La version de MariaDB (MySql) doit correspondre à celle de XAMPP. Pour la connaitre, allez dans la page d'accueil de phpmyadmin
+> ATTENTION : La version de MariaDB (MySql) doit correspondre à celle de XAMPP. Pour la connaitre, aller dans la page d'accueil de phpmyadmin
 
 Créer la base de données.
 ````powershell
@@ -156,6 +156,14 @@ return $this->render('my_template.html.twig', [
     'variable' => $value,
 ]);
 ````
+Ou 
+````php
+$vars = [
+    'variable' => $value,
+];
+
+return $this->render('my_template.html.twig', $vars);
+````
 Placer les fichiers Twig dans le répertoire templates/.
 
 ## 10. Gérer les formulaires
@@ -175,7 +183,209 @@ if ($form->isSubmitted() && $form->isValid()) {
 return $this->render('form_template.html.twig', [
     'form' => $form->createView(),
 ]);
+````
 
+### a. Créer un formulaire simple
+#### Création de la classe formulaire
+````powershell
+symfony console make:form
+````
+
+Nommer votre formulaire et spécifier une entité si le formulaire est lié à une entité. Par exemple, pour créer un formulaire pour une entité ``Product``, générer une classe de formulaire ``ProductType``.
+Cette commande générera une classe de formulaire dans ``src/Form/ProductType.php`` :
+````php
+namespace App\Form;
+
+use App\Entity\Product;
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\MoneyType;
+
+class ProductType extends AbstractType
+{
+    public function buildForm(FormBuilderInterface $builder, array $options): void
+    {
+        $builder
+            ->add('name', TextType::class, [
+                'label' => 'Product Name',
+            ])
+            ->add('price', MoneyType::class, [
+                'label' => 'Price',
+            ]);
+    }
+
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->setDefaults([
+            'data_class' => Product::class,
+        ]);
+    }
+}
+````
+
+#### Afficher le formulaire dans le contrôleur
+Une fois que la classe de formulaire est créée, utiliser le contrôleur pour gérer l'envoi et le traitement des données du formulaire.
+````php
+namespace App\Controller;
+
+use App\Entity\Product;
+use App\Form\ProductType;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class ProductController extends AbstractController
+{
+    public function new(Request $request): Response
+    {
+        $product = new Product();
+        $form = $this->createForm(ProductType::class, $product);
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            // Sauvegarder le produit dans la base de données
+            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager->persist($product);
+            $entityManager->flush();
+
+            return $this->redirectToRoute('product_success');
+        }
+
+        return $this->render('product/new.html.twig', [
+            'form' => $form->createView(),
+        ]);
+    }
+}
+````
+
+#### Afficher le formulaire dans Twig
+Ensuite, dans la template Twig (``product/new.html.twig``), rendre le formulaire avec une simple ligne de code :
+````twig
+{{ form_start(form) }}
+    {{ form_widget(form) }}
+    <button type="submit">Submit</button>
+{{ form_end(form) }}
+````
+- ``form_start(form)`` génère la balise ``<form>``.
+- ``form_widget(form)`` génère les champs du formulaire.
+- ``form_end(form)`` génère la balise de fermeture ``</form>``.
+
+### b. Formulaire de Recherche
+#### Créer une classe de formulaire de recherche
+Créer un formulaire de recherche en générant une classe de formulaire, sans l'associer à une entité :
+````powershell
+php bin/console make:form SearchType
+````
+
+Ensuite, dans la classe ``SearchType``, ajouter un champ pour la requête de recherche :
+````php
+namespace App\Form;
+
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\Extension\Core\Type\SearchType as SearchFieldType;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+
+class SearchType extends AbstractType
+{
+    public function buildForm(FormBuilderInterface $builder, array $options): void
+    {
+        $builder
+            ->add('query', SearchFieldType::class, [
+                'label' => 'Search',
+                'required' => false,
+            ]);
+    }
+
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->setDefaults([]);
+    }
+}
+````
+
+#### Afficher et gérer le formulaire de recherche dans le contrôleur
+Ensuite, dans le contrôleur, gérer ce formulaire de recherche. Lorsque le formulaire est soumis, récupérer la requête de recherche et l'utiliser pour filtrer les données :
+````php
+namespace App\Controller;
+
+use App\Form\SearchType;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class ProductController extends AbstractController
+{
+    public function search(Request $request): Response
+    {
+        $form = $this->createForm(SearchType::class);
+        $form->handleRequest($request);
+
+        $products = [];
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $query = $form->get('query')->getData();
+
+            // Rechercher des produits en fonction de la requête
+            $products = $this->getDoctrine()
+                ->getRepository(Product::class)
+                ->findByQuery($query);
+        }
+
+        return $this->render('product/search.html.twig', [
+            'form' => $form->createView(),
+            'products' => $products,
+        ]);
+    }
+}
+````
+
+Dans votre template Twig (``product/search.html.twig``), afficher le formulaire et les résultats :
+````twig
+{{ form_start(form) }}
+    {{ form_row(form.query) }}
+    <button type="submit">Search</button>
+{{ form_end(form) }}
+
+{% if products is not empty %}
+    <ul>
+    {% for product in products %}
+        <li>{{ product.name }} - {{ product.price }}</li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No products found.</p>
+{% endif %}
+````
+
+#### Méthode dans le Repository pour la recherche
+Enfin, dans le repository, créer une méthode pour exécuter la recherche. Par exemple, dans ``ProductRepository.php`` :
+````php
+namespace App\Repository;
+
+use App\Entity\Product;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Persistence\ManagerRegistry;
+
+class ProductRepository extends ServiceEntityRepository
+{
+    public function __construct(ManagerRegistry $registry)
+    {
+        parent::__construct($registry, Product::class);
+    }
+
+    public function findByQuery(string $query): array
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.name LIKE :query OR p.description LIKE :query')
+            ->setParameter('query', '%' . $query . '%')
+            ->getQuery()
+            ->getResult();
+    }
+}
 ````
 
 ## 11. Créer des fixtures (données factices)
@@ -184,7 +394,7 @@ Pour ajouter des données de test :
 symfony composer req --dev orm-fixtures
 ````
 
-Créez une classe de fixtures :
+Créer une classe de fixtures :
 ````powershell
 symfony console make:fixture
 ````
@@ -213,7 +423,7 @@ class ProductFixtures extends Fixture
 }
 ````
 
-Chargez les fixtures dans la base de données :
+Charger les fixtures dans la base de données :
 ````powershell
 symfony console doctrine:fixtures:load --append
 ````
