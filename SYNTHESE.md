@@ -1,5 +1,5 @@
 # Récapitulatif des commandes clés
-- Créer un projet : ``symfony new my_project --webapp``
+- Créer un projet : ``symfony new --webapp MyProjet``
 - Démarrer le serveur : ``symfony server:start``
 - Créer une base de données : ``php bin/console doctrine:database:create``
 - Créer une entité : ``php bin/console make:entity``
