@@ -1,12 +1,12 @@
 # Récapitulatif des commandes clés
 - Créer un projet : ``symfony new --webapp MyProjet``
 - Démarrer le serveur : ``symfony server:start``
-- Créer une base de données : ``php bin/console doctrine:database:create``
-- Créer une entité : ``php bin/console make:entity``
-- Créer une migration : ``php bin/console make:migration``
-- Appliquer les migrations : ``php bin/console doctrine:migrations:migrate``
-- Créer un contrôleur : ``php bin/console make:controller``
-- Nettoyer le cache : ``php bin/console cache:clear``
+- Créer une base de données : ``symfony console doctrine:database:create``
+- Créer une entité : ``symfony console make:entity``
+- Créer une migration : ``symfony console make:migration``
+- Appliquer les migrations : ``symfony console doctrine:migrations:migrate``
+- Créer un contrôleur : ``symfony console make:controller``
+- Nettoyer le cache : ``symfony console cache:clear``
 
 # Étapes de création du projet Symfony
 ## 1. Créer un nouveau projet Symfony
@@ -513,7 +513,7 @@ Ensuite, dans la template Twig (``product/new.html.twig``), rendre le formulaire
 #### Créer une classe de formulaire de recherche
 Créer un formulaire de recherche en générant une classe de formulaire, sans l'associer à une entité :
 ````powershell
-php bin/console make:form SearchType
+symfony console make:form SearchType
 ````
 
 Ensuite, dans la classe ``SearchType``, ajouter un champ pour la requête de recherche :
