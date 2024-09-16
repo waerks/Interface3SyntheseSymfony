@@ -134,20 +134,183 @@ symfony console doctrine:migration:migrate
 ````
 
 ## 7. Créer des contrôleurs
+### a. Créer un controller simpple
 Utiliser la commande suivante pour créer un contrôleur :
 ````powershell
 symfony console make:controller ExemplesTwig
 ````
-> Cette commande génère un contrôleur de base dans le répertoire src/Controller.
+> Cette commande génère un contrôleur de base dans le répertoire src/Controller avec un squelette de base.
+
+Voici un exemple d'un contrôleur généré :
+````php
+namespace App\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+
+class ProductController extends AbstractController
+{
+    #[Route('/product', name: 'product')]
+    public function index(): Response
+    {
+        return $this->render('product/index.html.twig', [
+            'controller_name' => 'ProductController',
+        ]);
+    }
+}
+````
+
+### b. Structure d'un Contrôleur
+Un contrôleur est essentiellement une méthode PHP dans une classe qui est associée à une route via des annotations ou des fichiers de configuration YAML/XML. Voici les principales parties d'un contrôleur :
+
+- **Route** : Définit l'URL qui déclenche l'action du contrôleur. Ici, ``#[Route('/product', name: 'product')]`` indique que cette méthode est accessible à l'URL ``/product``.
+- **Action** : Une méthode dans le contrôleur qui gère la logique pour une requête spécifique.
+- **Réponse** : Le contrôleur retourne une instance de ``Symfony\Component\HttpFoundation\Response``, qui peut être une vue HTML, JSON, ou autre format.
+
+### c. Retourner une Vue (HTML)
+L'une des principales fonctions d'un contrôleur est de renvoyer une vue Twig en réponse à une requête HTTP. Voici un exemple où une action retourne une page HTML avec des variables passées au template :
+````php
+#[Route('/product/list', name: 'product_list')]
+public function list(): Response
+{
+    $products = [
+        ['name' => 'Laptop', 'price' => 1000],
+        ['name' => 'Phone', 'price' => 500]
+    ];
+
+    $vars = [
+        'products' => $products,
+    ];
+
+    return $this->render('product/list.html.twig', $vars);
+}
+````
+
+Le template Twig associé ``product/list.html.twig`` :
+````twig
+<h1>Product List</h1>
+<ul>
+    {% for product in products %}
+        <li>{{ product.name }} - {{ product.price }}</li>
+    {% endfor %}
+</ul>
+````
+
+### d. Redirection
+Parfois, on a besoin de rediriger l'utilisateur vers une autre page après une certaine action, par exemple, après avoir soumis un formulaire ou créé un enregistrement. Utiliser la méthode redirectToRoute() pour rediriger l'utilisateur vers une autre route :
+````php
+#[Route('/product/create', name: 'product_create')]
+public function create(): Response
+{
+    // Logique de création de produit
+
+    return $this->redirectToRoute('product_list');
+}
+````
+
+### e. Récupérer les données depuis la Base de Données
+Voici comment récupérer des produits depuis la base de données avec le repository Doctrine.
+````php
+#[Route('/product/list', name: 'product_list')]
+public function list(): Response
+{
+    $products = $this->getDoctrine()
+        ->getRepository(Product::class)
+        ->findAll();
+
+    return $this->render('product/list.html.twig', [
+        'products' => $products,
+    ]);
+}
+````
+
+### f. Créer et Persister des données
+Pour créer un nouveau produit et l'enregistrer dans la base de données, utiliser le ``EntityManager`` de Doctrine pour persister l'entité et la sauvegarder.
+````php
+#[Route('/product/new', name: 'product_new')]
+public function new(Request $request): Response
+{
+    $product = new Product();
+    $product->setName('New Product');
+    $product->setPrice(100);
+
+    $entityManager = $this->getDoctrine()->getManager();
+    $entityManager->persist($product);
+    $entityManager->flush();
+
+    return $this->redirectToRoute('product_list');
+}
+````
+
+### g. Gérer les Formulaires dans un Contrôleur
+Voici un exemple d'utilisation d'un formulaire pour créer un produit :
+````php
+#[Route('/product/new', name: 'product_new')]
+public function new(Request $request): Response
+{
+    $product = new Product();
+    $form = $this->createForm(ProductType::class, $product);
+
+    $form->handleRequest($request);
+
+    if ($form->isSubmitted() && $form->isValid()) {
+        $entityManager = $this->getDoctrine()->getManager();
+        $entityManager->persist($product);
+        $entityManager->flush();
+
+        return $this->redirectToRoute('product_list');
+    }
+
+    return $this->render('product/new.html.twig', [
+        'form' => $form->createView(),
+    ]);
+}
+````
+
+Dans cet exemple :
+
+- La méthode ``createForm()`` génère un formulaire à partir de la classe ProductType.
+- ``handleRequest()`` traite le formulaire lorsqu'il est soumis.
+- Si le formulaire est soumis et valide, l'entité est persistée dans la base de données et l'utilisateur est redirigé.
+
+Le template associé pour le formulaire (``product/new.html.twig``) :
+````twig
+{{ form_start(form) }}
+    {{ form_widget(form) }}
+    <button type="submit">Create Product</button>
+{{ form_end(form) }}
+````
 
 ## 8. Gérer les routes
 Symfony gère les routes dans les fichiers de configuration config/routes/ ou directement via les annotations dans les contrôleurs. Pour ajouter une route via annotation :
 ````php
 #[Route ('/exemples/twig/exemple1',name:'exempleTwig')]
-public function exemple1 (){
+public function exemple (){
     return $this->render ('exemples_twig/exemple.html.twig');
 }
 ````
+
+#### Route avec Paramètres
+On peut passer des paramètres dynamiques aux routes dans Symfony. Par exemple, si on a besoin de récupérer un produit par son ID, ajouter un paramètre à la route.
+````php
+#[Route('/product/{id}', name: 'product_show')]
+public function show(int $id): Response
+{
+    $product = $this->getDoctrine()
+        ->getRepository(Product::class)
+        ->find($id);
+
+    if (!$product) {
+        throw $this->createNotFoundException('No product found for id '.$id);
+    }
+
+    return $this->render('product/show.html.twig', [
+        'product' => $product,
+    ]);
+}
+````
+Ici, la route ``/product/{id}`` acceptera n'importe quel ID dans l'URL et le transmettra à l'action ``show()``. Le produit correspondant est alors récupéré depuis la base de données.
 
 ## 9. Utiliser des templates avec Twig
 Symfony utilise Twig comme moteur de templates. Pour rendre une vue depuis un contrôleur :
