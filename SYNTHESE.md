@@ -9,19 +9,19 @@
 - Nettoyer le cache : ``php bin/console cache:clear``
 
 # Étapes de création du projet Symfony
-## 1. Créer un nouveau projet Symfony
+## <p style="color: #97DBAE;">1. Créer un nouveau projet Symfony</p>
 Utiliser Symfony CLI pour créer un projet. Cela configure un environnement de base avec les dépendances nécessaires.
 ````powershell
 symfony new --webapp MyProjet
 ````
 > Note : --webapp crée une application avec les bundles et configurations de base pour un projet web.
 > 
-## 2. Naviguer dans le répertoire du projet
+## <p style="color: #97DBAE;">2. Naviguer dans le répertoire du projet</p>
 ````powershell
 cd MyProjet
 ````
 
-## 3. Configurer un serveur de développement
+## <p style="color: #97DBAE;">3. Configurer un serveur de développement</p>
 ````powershell
 symfony server:start
 ````
@@ -35,7 +35,7 @@ symfony server:stop
 ````
 Allumer XAMPP et aller dans le navigateur, via [http://localhost:8000/](http://localhost:8000/)
 
-## 4. Configurer la base de données
+## <p style="color: #97DBAE;">4. Configurer la base de données</p>
 Configurer les paramètres de connexion à la base de données dans le fichier ``.env``.
 ````php
 DATABASE_URL="mysql://db_user:db_password@127.0.0.1:3306/db_name?serverVersion=8.0"
@@ -48,7 +48,7 @@ Créer la base de données.
 symfony console doctrine:database:create
 ````
 
-## 5. Créer des entités
+## <p style="color: #97DBAE;">5. Créer des entités</p>
 Utiliser Doctrine pour créer une entité.
 ````powershell
 symfony console make:entity
@@ -93,7 +93,7 @@ class Product
     // Getters et Setters
 }
 ````
-#### Types de colonnes Doctrine
+#### <p style="color: #F1E1A6;">Types de colonnes Doctrine</p>
 Les types les plus courants pour les propriétés d'entité incluent :
 - ``string`` : chaîne de caractères.
 - ``integer`` : entier.
