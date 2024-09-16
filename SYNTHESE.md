@@ -9,19 +9,19 @@
 - Nettoyer le cache : ``php bin/console cache:clear``
 
 # Étapes de création du projet Symfony
-## <p style="color: #97DBAE;">1. Créer un nouveau projet Symfony</p>
+## 1. Créer un nouveau projet Symfony
 Utiliser Symfony CLI pour créer un projet. Cela configure un environnement de base avec les dépendances nécessaires.
 ````powershell
 symfony new --webapp MyProjet
 ````
 > Note : --webapp crée une application avec les bundles et configurations de base pour un projet web.
 > 
-## <p style="color: #97DBAE;">2. Naviguer dans le répertoire du projet</p>
+## 2. Naviguer dans le répertoire du projet
 ````powershell
 cd MyProjet
 ````
 
-## <p style="color: #97DBAE;">3. Configurer un serveur de développement</p>
+## 3. Configurer un serveur de développement
 ````powershell
 symfony server:start
 ````
@@ -35,7 +35,7 @@ symfony server:stop
 ````
 Allumer XAMPP et aller dans le navigateur, via [http://localhost:8000/](http://localhost:8000/)
 
-## <p style="color: #97DBAE;">4. Configurer la base de données</p>
+## 4. Configurer la base de données
 Configurer les paramètres de connexion à la base de données dans le fichier ``.env``.
 ````php
 DATABASE_URL="mysql://db_user:db_password@127.0.0.1:3306/db_name?serverVersion=8.0"
@@ -48,7 +48,7 @@ Créer la base de données.
 symfony console doctrine:database:create
 ````
 
-## <p style="color: #97DBAE;">5. Créer des entités</p>
+## 5. Créer des entités
 Utiliser Doctrine pour créer une entité.
 ````powershell
 symfony console make:entity
@@ -93,7 +93,7 @@ class Product
     // Getters et Setters
 }
 ````
-#### <p style="color: #F1E1A6;">Types de colonnes Doctrine</p>
+#### Types de colonnes Doctrine
 Les types les plus courants pour les propriétés d'entité incluent :
 - ``string`` : chaîne de caractères.
 - ``integer`` : entier.
@@ -337,7 +337,70 @@ $vars = [
 
 return $this->render('my_template.html.twig', $vars);
 ````
-Placer les fichiers Twig dans le répertoire templates/.
+Placer les fichiers Twig dans le répertoire ``templates/``.
+
+### a. Syntaxe de base de Twig
+Twig utilise une syntaxe simple et lisible. Voici quelques constructions de base :
+
+- ``{{ ... }}`` pour afficher une variable.
+- ``{% ... %}`` pour des instructions de contrôle comme les boucles et les conditions.
+
+Afficher une variable :
+````twig
+{{ product.name }}
+````
+
+Conditions :
+````twig
+{% if product.stock > 0 %}
+    In Stock
+{% else %}
+    Out of Stock
+{% endif %}
+````
+
+Boucles :
+````twig
+{% for product in products %}
+    <li>{{ product.name }} - {{ product.price }}</li>
+{% endfor %}
+````
+
+### b. Extension de templates (Heritage)
+Twig permet d'utiliser l'héritage de templates, ce qui facilite la réutilisation du code. Par exemple, vous pouvez définir un layout (modèle de base) commun dans ``base.html.twig`` :
+````twig
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{% block title %}My App{% endblock %}</title>
+    </head>
+    <body>
+        <header>
+            <h1>Welcome to My App</h1>
+        </header>
+        
+        <div>
+            {% block body %}{% endblock %}
+        </div>
+    </body>
+</html>
+````
+
+Ensuite, dans vos autres templates, vous pouvez hériter de ce layout en utilisant ``{% extends %}`` et remplir les blocs définis dans le layout (``title``, ``body``, etc.) :
+
+````twig
+{% extends 'base.html.twig' %}
+
+{% block title %}Product List{% endblock %}
+
+{% block body %}
+    <ul>
+    {% for product in products %}
+        <li>{{ product.name }} - {{ product.price }}</li>
+    {% endfor %}
+    </ul>
+{% endblock %}
+````
 
 ## 10. Gérer les formulaires
 Créer un formulaire avec la commande suivante :
