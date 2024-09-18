@@ -796,7 +796,7 @@ public function getUserIdentifier(): string
 
 ### c. Sécuriser l'authentification
 #### Configuration de sécurité (security.yaml)
-La configuration de sécurité est définie dans le fichier ``config/packages/security``.yaml. Voici un exemple de configuration de base pour sécuriser une application Symfony :
+La configuration de sécurité est définie dans le fichier ``config/packages/security.yaml``. Voici un exemple de configuration de base pour sécuriser une application Symfony :
 ````yaml
 security:
     encoders:
@@ -834,3 +834,64 @@ security:
 - Providers : Un provider définit comment Symfony va récupérer les utilisateurs. Ici, le provider ``app_user_provider`` utilise Doctrine pour récupérer un utilisateur basé sur son email.
 - Firewalls : Les firewalls gèrent les zones sécurisées de l'application. Dans cet exemple, ``main`` utilise un système de connexion par formulaire.
 - Access control : La section ``access_control`` permet de restreindre l'accès à certaines URL en fonction des rôles de l'utilisateur (ex : ``/admin`` est accessible uniquement par les utilisateurs ayant le rôle ``ROLE_ADMIN``).
+### d. Gestion des utilisateurs (enregistrement et connexion)
+
+#### Inscription d'un utilisateur
+Création d'une classe de formulaire pour l'inscription :
+````php
+namespace App\Form;
+
+use App\Entity\User;
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
+
+class RegistrationFormType extends AbstractType
+{
+    public function buildForm(FormBuilderInterface $builder, array $options): void
+    {
+        $builder
+            ->add('email', EmailType::class)
+            ->add('plainPassword', RepeatedType::class, [
+                'type' => PasswordType::class,
+                'first_options' => ['label' => 'Password'],
+                'second_options' => ['label' => 'Confirm Password'],
+                'invalid_message' => 'The password fields must match.',
+            ])
+            ->add('submit', SubmitType::class, ['label' => 'Register']);
+    }
+}
+````
+
+Traitement dans un contrôleur :
+````php
+#[Route('/register', name: 'app_register')]
+public function register(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager): Response
+{
+    $user = new User();
+    $form = $this->createForm(RegistrationFormType::class, $user);
+    $form->handleRequest($request);
+
+    if ($form->isSubmitted() && $form->isValid()) {
+        // Hash le mot de passe
+        $user->setPassword(
+            $passwordHasher->hashPassword(
+                $user,
+                $form->get('plainPassword')->getData()
+            )
+        );
+
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        return $this->redirectToRoute('app_home');
+    }
+
+    return $this->render('registration/register.html.twig', [
+        'registrationForm' => $form->createView(),
+    ]);
+}
+````
