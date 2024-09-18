@@ -699,3 +699,138 @@ public function findExpensiveProducts(float $minPrice): array
         ->getResult();
 }
 ````
+
+## 13. Entité User
+Lorsqu'on configure un système d'authentification utilisateur avec Symfony, utiliser la commande ``symfony console make:user`` pour générer une entité ``User``. Symfony propose des options de base pour configurer cette entité, comme la gestion des rôles, des mots de passe, etc.
+````powershell
+symfony console make:user
+````
+Voici un exemple basique de ce que peut ressembler une entité ``User`` générée automatiquement :
+````php
+namespace App\Entity;
+
+use Symfony\Component\Security\Core\User\UserInterface;
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * @ORM\Entity()
+ */
+class User implements UserInterface
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
+    private $id;
+
+    #[ORM\Column(type: 'string', length: 180, unique: true)]
+    private $email;
+
+    #[ORM\Column(type: 'json')]
+    private $roles = [];
+
+    #[ORM\Column(type: 'string')]
+    private $password;
+
+    // Getters et setters...
+}
+````
+### a. Propriétés clés de l'entité User
+#### ID
+``id`` : Cette propriété sert de clé primaire dans la base de données et identifie chaque utilisateur de manière unique.
+#### Email 
+``email`` : L'adresse email est souvent utilisée comme nom d'utilisateur. Elle est unique et sert d'identifiant lors de la connexion.
+#### Mot de passe
+``password`` : Le mot de passe de l'utilisateur est stocké de manière sécurisée (hashé), et Symfony utilise des algorithmes de cryptage comme bcrypt ou argon2i pour garantir sa sécurité.
+#### Interfaces et méthodes
+L'entité ``User`` implémente l'interface ``UserInterface`` de Symfony, ce qui est nécessaire pour que l'utilisateur soit compatible avec le système de sécurité. Cela inclut des méthodes comme ``getRoles()``, ``getPassword()``, et ``eraseCredentials()``.
+
+### b. Méthodes essentielles dans l'entité User
+L'entité ``User`` doit respecter l'interface ``UserInterface`` et peut implémenter d'autres interfaces optionnelles pour des fonctionnalités supplémentaires.
+
+#### getRoles()
+Cette méthode retourne un tableau contenant les rôles de l'utilisateur. Symfony utilise des rôles pour déterminer l'accès à certaines parties de l'application. Un utilisateur aura toujours au moins le rôle ``ROLE_USER`` :
+````php
+public function getRoles(): array
+{
+    $roles = $this->roles;
+    $roles[] = 'ROLE_USER';
+    return array_unique($roles);
+}
+````
+
+#### getPassword()
+Cette méthode retourne le mot de passe hashé de l'utilisateur. Ce mot de passe est comparé à celui fourni lors de l'authentification :
+````php
+public function getPassword(): string
+{
+    return $this->password;
+}
+````
+
+#### getSalt()
+Cette méthode est nécessaire si vous utilisez un algorithme de hashage qui requiert un salt. Cependant, avec les algorithmes modernes comme bcrypt et argon2i, cette méthode est inutile.
+````php
+public function getSalt(): ?string
+{
+    return null;
+}
+````
+
+#### eraseCredentials()
+Cette méthode est utilisée pour nettoyer toute donnée sensible temporaire de l'utilisateur après l'authentification (par exemple, supprimer un mot de passe en clair). Elle peut être laissée vide si vous ne stockez pas de données sensibles en mémoire après l'authentification.
+````php
+public function eraseCredentials()
+{
+    // Clear temporary sensitive data
+}
+````
+
+#### getUsername() ou getUserIdentifier()
+Jusqu'à Symfony 5.3, la méthode ``getUsername()`` était utilisée pour récupérer l'identifiant utilisateur. Avec Symfony 5.3+, on utilise ``getUserIdentifier()`` à la place pour une meilleure compatibilité avec différents systèmes d'authentification.
+````php
+public function getUserIdentifier(): string
+{
+    return $this->email;
+}
+````
+
+### c. Sécuriser l'authentification
+#### Configuration de sécurité (security.yaml)
+La configuration de sécurité est définie dans le fichier ``config/packages/security``.yaml. Voici un exemple de configuration de base pour sécuriser une application Symfony :
+````yaml
+security:
+    encoders:
+        App\Entity\User:
+            algorithm: bcrypt
+
+    providers:
+        users_in_memory: { memory: null }
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        main:
+            anonymous: lazy
+            provider: app_user_provider
+            form_login:
+                login_path: login
+                check_path: login
+            logout:
+                path: logout
+
+    access_control:
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/profile, roles: ROLE_USER }
+````
+
+#### Gestion de l'authentification
+- Encoders : La section ``encoders`` permet de configurer les algorithmes de hashage pour le mot de passe (ici ``bcrypt``).
+- Providers : Un provider définit comment Symfony va récupérer les utilisateurs. Ici, le provider ``app_user_provider`` utilise Doctrine pour récupérer un utilisateur basé sur son email.
+- Firewalls : Les firewalls gèrent les zones sécurisées de l'application. Dans cet exemple, ``main`` utilise un système de connexion par formulaire.
+- Access control : La section ``access_control`` permet de restreindre l'accès à certaines URL en fonction des rôles de l'utilisateur (ex : ``/admin`` est accessible uniquement par les utilisateurs ayant le rôle ``ROLE_ADMIN``).
