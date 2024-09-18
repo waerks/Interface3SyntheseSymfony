@@ -133,6 +133,84 @@ class Product
 }
 ````
 
+### a. Hydrate() manuel
+Supposons que nous ayons une entité ``User`` avec des propriétés ``name`` et ``email``.
+Pour hydrater cette entité, vous pouvez le faire manuellement avec les setters :
+````php
+// Controller ou service
+use App\Entity\User;
+
+$user = new User();
+$user->setName('John Doe');
+$user->setEmail('john@example.com');
+````
+
+### b. Hydrate() avec un formulaire Symfony
+Créer un formulaire pour l'entité ``User`` :
+````php
+// src/Form/UserType.php
+namespace App\Form;
+
+use App\Entity\User;
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+
+class UserType extends AbstractType
+{
+    public function buildForm(FormBuilderInterface $builder, array $options)
+    {
+        $builder
+            ->add('name', TextType::class)
+            ->add('email', TextType::class);
+    }
+
+    public function configureOptions(OptionsResolver $resolver)
+    {
+        $resolver->setDefaults([
+            'data_class' => User::class,
+        ]);
+    }
+}
+````
+
+Dans le contrôleur, lorsqu'on soumette ce formulaire, Symfony hydrate automatiquement l'entité ``User`` avec les données du formulaire.
+````php
+// src/Controller/UserController.php
+namespace App\Controller;
+
+use App\Entity\User;
+use App\Form\UserType;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+
+class UserController extends AbstractController
+{
+    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $user = new User();
+        $form = $this->createForm(UserType::class, $user);
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            // L'entité User est automatiquement hydratée par Symfony
+            $entityManager->persist($user);
+            $entityManager->flush();
+
+            return $this->redirectToRoute('user_success');
+        }
+
+        return $this->render('user/new.html.twig', [
+            'form' => $form->createView(),
+        ]);
+    }
+}
+````
+
 ## 6. Créer et exécuter des migrations
 Après avoir créé ou modifié des entités, générer une migration.
 ````powershell
