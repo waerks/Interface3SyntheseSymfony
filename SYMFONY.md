@@ -39,7 +39,7 @@ Allumer XAMPP et aller dans le navigateur, via [http://localhost:8000/](http://l
 ## 4. Configurer la base de données
 Configurer les paramètres de connexion à la base de données dans le fichier ``.env`` :
 ````php
-DATABASE_URL="mysql://db_user:db_password@127.0.0.1:3306/db_name?serverVersion=8.0"
+DATABASE_URL="mysql://root:@127.0.0.1:3306/db_name?serverVersion=10.4.32-MariaDB&charset=utf8mb4"
 ````
 > [!IMPORTANT]
 > ATTENTION : La version de MariaDB (MySql) doit correspondre à celle de XAMPP. Pour la connaitre, aller dans la page d'accueil de phpmyadmin
