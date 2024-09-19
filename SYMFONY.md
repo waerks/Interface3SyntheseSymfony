@@ -256,6 +256,28 @@ public function show(int $id): Response
     // Gérer l'affichage du produit, que l'URL soit /product/{id} ou /item/{id}
 }
 ````
+Ici, que l'utilisateur accède à ``/product/{id}`` ou à ``/item/{id}``, la même méthode de contrôleur sera exécutée. Cela permet de prendre en charge plusieurs versions d'une URL tout en centralisant le traitement dans un seul contrôleur.
+
+### Utiliser des valeurs par défaut avec des alternatives
+Il est également possible de combiner des valeurs par défaut avec des valeurs alternatives dans les paramètres de route. Par exemple, permettre plusieurs langues dans l'URL avec une valeur par défaut :
+````php
+#[Route('/{_locale}/contact', name: 'contact', defaults: ['_locale' => 'en'], requirements: ['_locale' => 'en|fr|es'])]
+public function contact(string $_locale): Response
+{
+    // Gérer la page de contact en fonction de la langue
+}
+````
+Dans cet exemple, la route ``/en/contact`` sera la valeur par défaut, mais l'utilisateur peut aussi accéder à ``/fr/contact`` ou ``/es/contact`` pour les versions en français et espagnol. Symfony redirigera vers la bonne version de la page en fonction de la langue fournie dans l'URL.
+
+### Gérer plusieurs paramètres avec des valeurs alternatives
+Vous pouvez également définir des valeurs alternatives pour plusieurs paramètres d'une route.
+````php
+#[Route('/report/{year}/{month}', name: 'report', requirements: ['year' => '\d{4}', 'month' => '0[1-9]|1[0-2]'])]
+public function report(int $year, string $month): Response
+{
+    // Gérer les rapports en fonction de l'année et du mois
+}
+````
 
 # Créer et exécuter des migrations
 Après avoir créé ou modifié des entités, générer une migration.
