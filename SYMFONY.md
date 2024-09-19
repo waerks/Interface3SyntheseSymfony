@@ -328,10 +328,10 @@ Un contrôleur est essentiellement une méthode PHP dans une classe qui est asso
 
 ### Types de réponses d'un controller
 
-- ``render()`` permet d'afficher une vue
-- ``redirect()`` permet de rediriger le navigateur vers une autre adresse, sans ou avec de paramètres
-- ``redirectToRoute()`` permet de lancer une action mais en utilisant le nom (name) d'une route. On va voir des exemples dans ce chapitre
-- ``forward()`` permet de déléguer l'action (pas d'erreur http)
+- ``render()`` permet d'afficher une vue.
+- ``redirect()`` permet de rediriger le navigateur vers une autre adresse, sans ou avec de paramètres.
+- ``redirectToRoute()`` permet de lancer une action mais en utilisant le nom (name) d'une route. On va voir des exemples dans ce chapitre.
+- ``forward()`` permet de déléguer l'action (pas d'erreur http).
 - ``renderView()`` permet d'obtenir le rendu d'une vue sans les en-têtes HTML. C'est à dire c'est une action qui ne chargera pas une page (à différence de toutes les précédentes)... elle nous donne simplement le HTML qui correspond à la vue choisie. C'est utile si on utilise AJAX.
 
 
