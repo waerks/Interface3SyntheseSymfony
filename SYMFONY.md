@@ -517,6 +517,99 @@ public function showProduct(int $id)
 ````
 Ici, ``createNotFoundException()`` lance une exception ``NotFoundHttpException``, qui est automatiquement traduite en une réponse 404.
 
+### Gestionnaire d'Exceptions
+Symfony utilise un gestionnaire d'exceptions (Exception Listener) pour intercepter les exceptions non capturées et les convertir en réponses HTTP. Cela garantit que toute exception lancée dans une application Symfony sera interceptée, puis transformée en une réponse HTTP appropriée.
+
+**Page d'erreur en mode debug**
+
+Lorsque vous travaillez en environnement de développement ``(APP_ENV=dev)``, Symfony vous montre une page d'erreur avec des détails exhaustifs sur l'exception, y compris :
+
+- Le message d'erreur
+- La pile d'appels (stack trace)
+- Les variables locales
+
+Cela vous aide à identifier rapidement l'origine de l'erreur.
+
+### Pages d'erreurs HTTP (404, 500, etc.)
+Symfony permet de personnaliser les réponses d'erreurs HTTP courantes, comme les erreurs 404 (page non trouvée) ou 500 (erreur serveur). Par défaut, Symfony fournit des pages d'erreur basiques, mais vous pouvez créer vos propres templates pour offrir une meilleure expérience utilisateur.
+
+**Personnalisation des pages d'erreur :**
+
+Pour personnaliser les pages d'erreurs comme 404 ou 500, créez des templates Twig dans le dossier ``templates/bundles/TwigBundle/Exception/`` :
+
+- ``404.html.twig`` : pour les erreurs 404 (page non trouvée).
+- ``500.html.twig`` : pour les erreurs 500 (erreur serveur).
+
+Exemple d'une page d'erreur 404 personnalisée :
+````twig 
+{# templates/bundles/TwigBundle/Exception/error404.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Page Not Found{% endblock %}
+
+{% block body %}
+    <h1>Oops! This page could not be found.</h1>
+    <p>The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.</p>
+    <a href="{{ path('homepage') }}">Go back to the homepage</a>
+{% endblock %}
+````
+Cette page personnalisée sera servie automatiquement lorsque Symfony renverra une erreur 404.
+
+### Gestion des Erreurs et des Logs
+Symfony utilise le composant Monolog pour gérer les logs d'erreurs. Cela permet de suivre et d'enregistrer toutes les exceptions qui se produisent dans l'application, même celles qui ne sont pas directement visibles pour les utilisateurs. Monolog peut envoyer les logs dans différents supports comme les fichiers, les bases de données, ou des services externes.
+
+Configuration des logs dans ``config/packages/monolog.yaml`` :
+````yaml
+monolog:
+    handlers:
+        main:
+            type: stream
+            path: "%kernel.logs_dir%/%kernel.environment%.log"
+            level: error
+        console:
+            type: console
+            process_psr_3_messages: false
+            channels: ["!event", "!doctrine"]
+````
+Cela enregistre les erreurs et les événements importants dans des fichiers de log, qui peuvent être consultés pour diagnostiquer des problèmes ou analyser les performances de l'application.
+
+### Redirection vers une page d'erreur personnalisée
+Si vous souhaitez rediriger vers une page d'erreur spécifique en cas d'exception, vous pouvez intercepter l'exception dans un **Event Listener** ou un **Event Subscriber**. Ce processus vous permet de gérer certaines exceptions de manière plus fine et d'afficher des pages d'erreur plus appropriées selon le contexte de votre application.
+
+Exemple d'Event Listener pour gérer les erreurs :
+````php
+use Symfony\Component\HttpKernel\Event\ExceptionEvent;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\RouterInterface;
+use Twig\Environment;
+
+class ExceptionListener
+{
+    private $twig;
+    private $router;
+
+    public function __construct(Environment $twig, RouterInterface $router)
+    {
+        $this->twig = $twig;
+        $this->router = $router;
+    }
+
+    public function onKernelException(ExceptionEvent $event)
+    {
+        $exception = $event->getThrowable();
+        
+        if ($exception instanceof NotFoundHttpException) {
+            $response = new Response($this->twig->render('error/404.html.twig'));
+            $event->setResponse($response);
+        } elseif ($exception instanceof \Exception) {
+            $response = new Response($this->twig->render('error/500.html.twig'));
+            $event->setResponse($response);
+        }
+    }
+}
+````
+Cet exemple montre comment capturer différentes exceptions et afficher des pages d'erreur spécifiques selon le type d'exception.
+
 # Le modèle
 ## 1. Créer des Entités
 ## 2. Rajouter et effacer des propriétés
