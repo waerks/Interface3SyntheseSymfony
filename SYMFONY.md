@@ -291,13 +291,232 @@ symfony console doctrine:migration:migrate
 
 # Créer des contrôleurs
 ## 1. Créer un controller simpple
+Utilisez la commande suivante pour créer un contrôleur :
+````powershell
+symfony console make:controller ExemplesTwig
+````
+Cette commande génère un contrôleur de base dans le répertoire ``src/Controller`` avec un squelette de base.
+
+Voici un exemple d'un contrôleur généré :
+````php
+namespace App\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+
+class ProductController extends AbstractController
+{
+    #[Route('/product', name: 'product')]
+    public function index(): Response
+    {
+        return $this->render('product/index.html.twig', [
+            'controller_name' => 'ProductController',
+        ]);
+    }
+}
+````
+
 ## 2. Structure d'un Contrôleur
+Un contrôleur est essentiellement une méthode PHP dans une classe qui est associée à une route via des annotations ou des fichiers de configuration YAML/XML. 
+
 ### Les principales parties d'un contrôleur
+
+- **Route** : Définit l'URL qui déclenche l'action du contrôleur. Ici, ``#[Route('/product', name: 'product')]`` indique que cette méthode est accessible à l'URL ``/product``.
+- **Action** : Une méthode dans le contrôleur qui gère la logique pour une requête spécifique.
+- **Réponse** : Le contrôleur retourne une instance de ``Symfony\Component\HttpFoundation\Response``, qui peut être une vue HTML, JSON, ou autre format.
+- **Request** : Le contrôleur reçoit une instance de ``Symfony\Component\HttpFoundation\Request``, qui contient les données envoyées par l'utilisateur, comme les paramètres de requête, les données POST, les fichiers, etc.
+
 ### Types de réponses d'un controller
-## 3. Utiliser des templates avec Twig
+
+- ``render()`` permet d'afficher une vue
+- ``redirect()`` permet de rediriger le navigateur vers une autre adresse, sans ou avec de paramètres
+- ``redirectToRoute()`` permet de lancer une action mais en utilisant le nom (name) d'une route. On va voir des exemples dans ce chapitre
+- ``forward()`` permet de déléguer l'action (pas d'erreur http)
+- ``renderView()`` permet d'obtenir le rendu d'une vue sans les en-têtes HTML. C'est à dire c'est une action qui ne chargera pas une page (à différence de toutes les précédentes)... elle nous donne simplement le HTML qui correspond à la vue choisie. C'est utile si on utilise AJAX.
+
+
+## 3. Les templates Twig
+Symfony utilise Twig comme moteur de templates. Pour rendre une vue depuis un contrôleur :
+````php
+return $this->render('my_template.html.twig', [
+    'variable' => $value,
+]);
+````
+Ou 
+````php
+$vars = [
+    'variable' => $value,
+];
+
+return $this->render('my_template.html.twig', $vars);
+````
+Placer les fichiers Twig dans le répertoire ``templates/``.
+
+### Syntaxe de base de Twig
+Twig utilise une syntaxe simple et lisible. Voici quelques constructions de base :
+
+- ``{{ ... }}`` pour afficher une variable.
+- ``{% ... %}`` pour des instructions de contrôle comme les boucles et les conditions.
+
+Afficher une variable :
+````twig
+{{ product.name }}
+````
+
+Conditions :
+````twig
+{% if product.stock > 0 %}
+    In Stock
+{% else %}
+    Out of Stock
+{% endif %}
+````
+
+Boucles :
+````twig
+{% for product in products %}
+    <li>{{ product.name }} - {{ product.price }}</li>
+{% endfor %}
+````
+
+### Extension de templates (Heritage)
+Twig permet d'utiliser l'héritage de templates, ce qui facilite la réutilisation du code. Par exemple, vous pouvez définir un layout (modèle de base) commun dans ``base.html.twig`` :
+````twig
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{% block title %}My App{% endblock %}</title>
+    </head>
+    <body>
+        <header>
+            <h1>Welcome to My App</h1>
+        </header>
+        
+        <div>
+            {% block body %}{% endblock %}
+        </div>
+    </body>
+</html>
+````
+
+Ensuite, dans vos autres templates, vous pouvez hériter de ce layout en utilisant ``{% extends %}`` et remplir les blocs définis dans le layout (``title``, ``body``, etc.) :
+
+````twig
+{% extends 'base.html.twig' %}
+
+{% block title %}Product List{% endblock %}
+
+{% block body %}
+    <ul>
+    {% for product in products %}
+        <li>{{ product.name }} - {{ product.price }}</li>
+    {% endfor %}
+    </ul>
+{% endblock %}
+````
+
+### Inclusion des templates (Heritage)
+En utilisant la directive ``{% include %}``, vous pouvez diviser votre page en plusieurs parties réutilisables. Par exemple, au lieu de définir l'en-tête et le pied de page dans chaque template, vous pouvez les extraire dans des fichiers séparés et les inclure là où c'est nécessaire.
+````twig
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}Page Title{% endblock %}</title>
+</head>
+<body>
+    <header>
+        {% include 'exemples_twig_heritage/header.html.twig' %}
+    </header>
+    <main>
+        {% block contenuPrincipal %}{% endblock %}
+    </main>
+    <footer>
+        {% include 'exemples_twig_heritage/footer.html.twig' %}
+    </footer>
+</body>
+</html>
+````
+
+Et créez les actions et les routes.
+
+````php
+#[Route("/exemples/twig/heritage/contenu1/master/page2")]
+public function contenu1MasterPage2()
+{
+    return $this->render('exemples_twig_heritage/contenu_1_master_page_2.html.twig');
+}
+
+#[Route("/exemples/twig/heritage/contenu2/master/page2")]
+public function contenu2MasterPage2()
+{
+    return $this->render('exemples_twig_heritage/contenu_2_master_page_2.html.twig');
+}
+````
+
 ## 4. Retourner une Vue (HTML)
+L'une des principales fonctions d'un contrôleur est de renvoyer une vue Twig en réponse à une requête HTTP. Voici un exemple où une action retourne une page HTML avec des variables passées au template :
+````php
+#[Route('/product/list', name: 'product_list')]
+public function list(): Response
+{
+    $products = [
+        ['name' => 'Laptop', 'price' => 1000],
+        ['name' => 'Phone', 'price' => 500]
+    ];
+
+    $vars = [
+        'products' => $products,
+    ];
+
+    return $this->render('product/list.html.twig', $vars);
+}
+````
+
+Le template Twig associé ``product/list.html.twig`` :
+````twig
+<h1>Product List</h1>
+<ul>
+    {% for product in products %}
+        <li>{{ product.name }} - {{ product.price }}</li>
+    {% endfor %}
+</ul>
+````
+
 ## 5. Redirection
+Parfois, on a besoin de rediriger l'utilisateur vers une autre page après une certaine action, par exemple, après avoir soumis un formulaire ou créé un enregistrement. Utilisez la méthode ``redirectToRoute()`` pour rediriger l'utilisateur vers une autre route :
+````php
+#[Route('/product/create', name: 'product_create')]
+public function create(): Response
+{
+    // Logique de création de produit
+
+    return $this->redirectToRoute('product_list');
+}
+````
+
 ## 6. Gestion des erreurs
+### Exceptions et Erreurs
+En Symfony, les erreurs sont souvent traitées sous forme d'exceptions. Une exception est un objet qui représente un événement exceptionnel (erreur) qui interrompt le flux normal d'une application. Symfony utilise une hiérarchie d'exceptions pour représenter les différents types d'erreurs :
+- Exceptions générales : Ce sont des exceptions levées par PHP ou par l'application (comme ``LogicException``, ``InvalidArgumentException``, etc.).
+- Exceptions HTTP : Elles représentent des erreurs spécifiques à la gestion des requêtes HTTP, telles que ``HttpException`` ou ``NotFoundHttpException``.
+
+### Exemple d'exception personnalisée
+Dans un contrôleur, vous pouvez lever une exception si une certaine condition n'est pas remplie :
+
+````php
+public function showProduct(int $id)
+{
+    $product = $this->getDoctrine()->getRepository(Product::class)->find($id);
+
+    if (!$product) {
+        throw $this->createNotFoundException('Product not found.');
+    }
+
+    // autre logique
+}
+````
+Ici, ``createNotFoundException()`` lance une exception ``NotFoundHttpException``, qui est automatiquement traduite en une réponse 404.
 
 # Le modèle
 ## 1. Créer des Entités
