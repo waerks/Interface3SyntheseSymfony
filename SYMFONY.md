@@ -612,33 +612,815 @@ Cet exemple montre comment capturer différentes exceptions et afficher des page
 
 # Le modèle
 ## 1. Créer des Entités
-## 2. Rajouter et effacer des propriétés
+Pour créer une entité :
+````powershell
+symfony console make:entity
+````
+Ou, définir directement le nom de l'entité :
+````powershell
+symfony console make:entity Product
+````
+
+Après avoir nommé l'entité, Symfony vous demande d'ajouter des propriétés. Par exemple :
+
+- Nom : ``name`` (type ``string``)
+- Prix : ``price`` (type ``float``)
+
+Ces propriétés seront traduites en colonnes dans la table ``product``.
+
+Une fois terminé, une classe sera générée dans le répertoire ``src/Entity``, par exemple ``src/Entity/Product.php``.
+## 2. Ajouter, modifier ou supprimer des propriétés
+### Ajouter des propriétés
+**Via la commande ``make:entity``**
+Par exemple, si vous voulez ajouter une propriété à l'entité ``Product``, utilisez :
+````powershell
+symfony console make:entity Product
+````
+Symfony vous demandera si vous voulez ajouter une nouvelle propriété. Répondez par "oui" et définissez la propriété.
+
+Par exemple, pour ajouter une propriété ``description`` de type ``string`` :
+
+- Nom de la propriété : ``description``
+- Type de la propriété : ``string``
+- Taille : Vous pouvez laisser la taille par défaut ou spécifier la taille maximale (par exemple 255).
+
+Symfony générera automatiquement le getter et le setter pour la nouvelle propriété dans la classe de l'entité.
+
+### Modifier une propriété
+Modifiez le fichier de l'entité et ajustez la propriété.
+
+Exemple : si vous voulez changer la taille maximale de la propriété ``description`` de 255 caractères à 500 caractères, modifiez simplement l'annotation Doctrine :
+
+````php
+// src/Entity/Product.php
+
+/**
+ * @ORM\Column(type="string", length=500)
+ */
+private $description;
+````
+Après modification, vous devrez également générer une migration pour appliquer ce changement à la base de données.
+
+### Supprimer une propriété
+Pour supprimer une propriété, vous devez retirer son attribut de l'entité et également supprimer les méthodes associées (le getter et le setter) :
+
+Ouvrez le fichier de l'entité (``Product.php`` par exemple).
+
+Supprimez la propriété et ses annotations, par exemple pour la propriété ``description`` :
+
+````php
+// Supprimez ce code :
+/**
+ * @ORM\Column(type="string", length=255)
+ */
+private $description;
+
+public function getDescription(): ?string
+{
+    return $this->description;
+}
+
+public function setDescription(string $description): self
+{
+    $this->description = $description;
+
+    return $this;
+}
+````
+Comme pour les autres modifications, générez et appliquez une migration pour supprimer la colonne correspondante dans la base de données.
+
+### Cas particuliers : Propriétés avec contrainte de validation
+
+Si vous voulez ajouter des contraintes de validation à une propriété (par exemple, exiger que le champ ne soit pas vide ou qu'il respecte un certain format), vous pouvez utiliser les annotations de validation Symfony dans l'entité.
+
+Par exemple, pour exiger que la propriété ``name`` ne soit pas vide :
+
+````php
+use Symfony\Component\Validator\Constraints as Assert;
+
+class Product
+{
+    /**
+     * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank
+     */
+    private $name;
+}
+````
+Vous pouvez ajouter diverses contraintes, comme ``@Assert\Length``, ``@Assert\Email``, ``@Assert\Range``, etc. Cela s'applique aussi bien lors de la création que de la modification de propriétés.
+
 ## 3. Les relations
+Doctrine prend en charge plusieurs types de relations entre entités :
+
+- **OneToOne** (1:1) : Une entité A est liée à une entité B, et vice-versa.
+- **OneToMany** (1:n) : Une entité A peut être liée à plusieurs entités B, mais une entité B n'est liée qu'à une seule entité A.
+- **ManyToOne** (n:1) : C'est l'inverse de OneToMany.
+- **ManyToMany** (n:n) : Une entité A peut être liée à plusieurs entités B, et chaque entité B peut être liée à plusieurs entités A.
+
+## 4. Manipuler les entités
+### Ajouter des éléments
+````php
+$category = new Category();
+$category->setName('Electronics');
+
+$product = new Product();
+$product->setName('Laptop');
+$product->setPrice(1000);
+$product->setCategory($category);
+
+// Sauvegarder en base de données
+$entityManager = $this->getDoctrine()->getManager();
+$entityManager->persist($category);
+$entityManager->persist($product);
+$entityManager->flush();
+````
+
+### Modifier une entité
+````php
+$product = $this->getDoctrine()->getRepository(Product::class)->find($id);
+$product->setPrice(1200);
+
+$entityManager->flush();
+````
+
+### Supprimer une entité
+````php
+$entityManager->remove($product);
+$entityManager->flush();
+````
+Cela supprimera le produit de la base de données.
 
 # Le modèle : Accès à la DB avec Doctrine
 ## 1. SELECT
+### Récupérer une entité par son ID
+Si vous voulez récupérer une entité par son ID, utilisez la méthode ``find()`` :
+````php
+// Récupérer un produit avec l'ID 1
+$product = $this->getDoctrine()
+    ->getRepository(Product::class)
+    ->find(1);
+````
+
+### Récupérer toutes les entités
+Vous pouvez récupérer toutes les entités en utilisant la méthode ``findAll()`` :
+````php
+// Récupérer tous les produits
+$products = $this->getDoctrine()
+    ->getRepository(Product::class)
+    ->findAll();
+````
+
+### Récupérer des entités avec des critères
+Vous pouvez aussi filtrer les résultats en fonction de critères spécifiques avec ``findBy()`` :
+````php
+// Récupérer tous les produits dont le prix est supérieur à 100
+$products = $this->getDoctrine()
+    ->getRepository(Product::class)
+    ->findBy(['price' => 100]);
+````
+
+### Récupérer un seul élément avec des critères
+Si vous voulez récupérer un seul élément basé sur un critère spécifique, utilisez ``findOneBy()`` :
+````php
+// Récupérer un produit avec un nom spécifique
+$product = $this->getDoctrine()
+    ->getRepository(Product::class)
+    ->findOneBy(['name' => 'Laptop']);
+````
+
+### Requête personnalisée avec le QueryBuilder
+Pour des requêtes plus complexes, vous pouvez utiliser le ``QueryBuilder``. Par exemple, pour récupérer des produits triés par prix :
+````php
+$products = $this->getDoctrine()
+    ->getRepository(Product::class)
+    ->createQueryBuilder('p')
+    ->orderBy('p.price', 'ASC')
+    ->getQuery()
+    ->getResult();
+````
+
 ## 2. INSERT
+L'insertion d'une nouvelle entité (enregistrement) dans la base de données se fait en trois étapes :
+
+- Créer l'objet de l'entité.
+- Le persister via l'EntityManager.
+- Sauvegarder les changements dans la base de données avec ``flush()``.
+
+````php
+// Créer un nouvel objet Product
+$product = new Product();
+$product->setName('Laptop');
+$product->setPrice(1000);
+
+// Récupérer l'EntityManager
+$entityManager = $this->getDoctrine()->getManager();
+
+// Persister l'objet (préparation pour l'insertion dans la base de données)
+$entityManager->persist($product);
+
+// Sauvegarder les changements dans la base de données
+$entityManager->flush();
+````
+
 ## 3. UPDATE
+Pour faire une mise à jour (UPDATE) dans Doctrine, vous devez d'abord récupérer l'entité que vous souhaitez modifier, effectuer les changements, puis appeler ``flush()`` pour enregistrer les modifications dans la base de données.
+
+````php
+// Récupérer l'entité existante
+$product = $this->getDoctrine()
+    ->getRepository(Product::class)
+    ->find(1);
+
+if ($product) {
+    // Modifier la propriété
+    $product->setPrice(1200);
+
+    // Sauvegarder les modifications
+    $entityManager = $this->getDoctrine()->getManager();
+    $entityManager->flush();
+}
+````
+
 ## 4. DELETE
+La suppression d'une entité se fait en deux étapes :
+
+- Récupérer l'entité que vous voulez supprimer.
+- Utiliser la méthode ``remove()`` de l'EntityManager, puis appeler ``flush()``.
+````php
+// Récupérer l'entité à supprimer
+$product = $this->getDoctrine()
+    ->getRepository(Product::class)
+    ->find(1);
+
+if ($product) {
+    // Supprimer l'entité
+    $entityManager = $this->getDoctrine()->getManager();
+    $entityManager->remove($product);
+
+    // Sauvegarder la suppression dans la base de données
+    $entityManager->flush();
+}
+````
 
 # Le modèle : Pertsistance
+## 1. Concept de Persistance
+La persistance consiste à rendre les objets PHP (les entités) persistants, c'est-à-dire à les enregistrer dans une base de données, afin qu'ils puissent être récupérés et manipulés ultérieurement. Doctrine fournit des outils pour mapper les objets PHP à des tables de la base de données et pour effectuer des opérations de persistance telles que :
+
+- Insertion de nouvelles données (INSERT),
+- Mise à jour de données existantes (UPDATE),
+- Suppression de données (DELETE),
+- Récupération de données (SELECT).
+
+## 2. Entity Manager
+L'Entity Manager de Doctrine est le composant principal responsable de la gestion de la persistance. Il assure la communication entre les objets PHP et la base de données. Voici ses principales fonctions :
+
+- ``persist()`` : Prépare une entité pour l'insertion ou la mise à jour dans la base de données.
+- ``remove()`` : Prépare une entité pour suppression.
+- ``flush()`` : Exécute toutes les opérations en attente (insertion, mise à jour, suppression) dans la base de données.
+
+## 3. Cycle de Vie de la Persistance
+Voici comment fonctionne le cycle de vie de la persistance avec Doctrine dans Symfony :
+
+**Créer une Entité** : Vous créez un objet d’une entité (ex : un produit, un utilisateur).
+
+**Persistance via l'Entity Manager** :
+- Vous utilisez la méthode ``persist()`` de l'Entity Manager pour indiquer que vous souhaitez rendre cet objet persistant.
+- Ensuite, vous appelez ``flush()`` pour appliquer ces changements dans la base de données.
+
+````php
+$entityManager = $this->getDoctrine()->getManager();
+
+$product = new Product();
+$product->setName('Laptop');
+$product->setPrice(1000);
+
+$entityManager->persist($product);  // Prépare l'entité pour l'insertion
+$entityManager->flush();            // Enregistre réellement dans la base de données
+````
+**Mise à Jour** : Lorsque vous modifiez une entité déjà persistée, Doctrine suit automatiquement les changements. Vous devez simplement appeler ``flush()`` pour les sauvegarder dans la base de données.
+````php
+$product = $this->getDoctrine()->getRepository(Product::class)->find(1);
+$product->setPrice(1200);
+
+$entityManager->flush();  // Doctrine met à jour l'enregistrement existant
+````
+**Suppression d'une Entité** : Vous utilisez la méthode ``remove()`` pour marquer une entité pour suppression, puis ``flush()`` pour exécuter l'opération dans la base de données.
+````php
+$product = $this->getDoctrine()->getRepository(Product::class)->find(1);
+
+$entityManager->remove($product);  // Marque l'entité pour suppression
+$entityManager->flush();           // Supprime de la base de données
+````
 
 # Le modèle : Hydrate
+Pour s'épargner les ``set()`` vous pouvez créer un ``hydrate()`` pour vos entités :
+````php
+public function __construct(array $init = [])
+{
+    $this->hydrate($init); 
+
+    // il peut avoir des lignes propres à l'entité
+    $this->products = new ArrayCollection();
+}
+
+public function hydrate (array $vals = []){
+    foreach ($vals as $key=> $val){
+        $method = "set" . ucfirst($key); 
+        if (method_exists($this,$method)){
+            $this->$method ($val);
+        }
+    }
+}
+````
+Vous pouvez lancer l'hydrate :
+````php
+use Doctrine\Persistence\ManagerRegistry;
+.
+.
+.
+    #[Route ("/exemples/modele/exemple/insert")]
+    public function exempleInsert(ManagerRegistry $doctrine)
+    {
+        $em = $doctrine->getManager();
+        // créer l'objet avec le hydrate
+        $livre = new Product(
+            [
+                "titre"=> "Guerre et paix",
+                "prix"=> 20,
+                ]);
+        // lier l'objet avec la BD
+        $em->persist($livre);
+        // écrire l'objet dans la BD
+        $em->flush();
+
+        return $this->render("exemples_modele/exemple_insert.html.twig");
+    }
+````
 
 # Le modèle : Créer des fixtures
 ## 1. Créer des fixtures
+### Installation de DoctrineFixturesBundle
+Avant de créer et utiliser des fixtures, il est nécessaire d'installer le bundle ``DoctrineFixturesBundle``.
+````powershell
+composer require --dev orm-fixtures
+````
+
+### Créer une Fixture
+Pour créer une fixture, il suffit de créer une classe qui implémente l'interface ``FixtureInterface`` ou d'étendre la classe abstraite ``Fixture`` dans le répertoire ``src/DataFixtures``.
+
+Voici un exemple de fixture simple pour ajouter des produits à une table ``Product`` :
+````php
+// src/DataFixtures/ProductFixtures.php
+
+namespace App\DataFixtures;
+
+use App\Entity\Product;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Persistence\ObjectManager;
+
+class ProductFixtures extends Fixture
+{
+    public function load(ObjectManager $manager): void
+    {
+        // Créer un produit
+        $product = new Product();
+        $product->setName('Ordinateur portable');
+        $product->setPrice(1200);
+        
+        // Persister l'entité dans l'EntityManager
+        $manager->persist($product);
+
+        // Appliquer les changements à la base de données
+        $manager->flush();
+    }
+}
+````
+
+### Exécuter les Fixtures
+Une fois la fixture créée, vous pouvez l'exécuter avec la commande suivante pour charger les données dans la base de données :
+````powershell
+symfony console doctrine:fixtures:load
+````
+
 ## 2. Fixtures dans ManyToMany
+Exemple : Supposons que nous ayons deux entités ``Product`` et ``Category``, où un produit peut appartenir à plusieurs catégories, et une catégorie peut contenir plusieurs produits.
+
+Entité ``Product`` :
+````php
+// src/Entity/Product.php
+
+namespace App\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+
+/**
+ * @ORM\Entity()
+ */
+class Product
+{
+    /**
+     * @ORM\ManyToMany(targetEntity="App\Entity\Category", inversedBy="products")
+     * @ORM\JoinTable(name="product_category")
+     */
+    private $categories;
+
+    public function __construct()
+    {
+        $this->categories = new ArrayCollection();
+    }
+
+    public function addCategory(Category $category): self
+    {
+        if (!$this->categories->contains($category)) {
+            $this->categories[] = $category;
+            $category->addProduct($this);
+        }
+
+        return $this;
+    }
+}
+````
+Entité ``Category`` :
+````php
+// src/Entity/Category.php
+
+namespace App\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+
+/**
+ * @ORM\Entity()
+ */
+class Category
+{
+    /**
+     * @ORM\ManyToMany(targetEntity="App\Entity\Product", mappedBy="categories")
+     */
+    private $products;
+
+    public function __construct()
+    {
+        $this->products = new ArrayCollection();
+    }
+
+    public function addProduct(Product $product): self
+    {
+        if (!$this->products->contains($product)) {
+            $this->products[] = $product;
+        }
+
+        return $this;
+    }
+}
+````
+
+**Fixture avec relation ManyToMany :**
+````php
+// src/DataFixtures/AppFixtures.php
+
+namespace App\DataFixtures;
+
+use App\Entity\Product;
+use App\Entity\Category;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Persistence\ObjectManager;
+
+class AppFixtures extends Fixture
+{
+    public function load(ObjectManager $manager)
+    {
+        // Créer des catégories
+        $category1 = new Category();
+        $category1->setName('Electronics');
+        $manager->persist($category1);
+
+        $category2 = new Category();
+        $category2->setName('Computers');
+        $manager->persist($category2);
+
+        // Créer un produit
+        $product = new Product();
+        $product->setName('Laptop');
+        $product->setPrice(1200);
+        
+        // Associer des catégories au produit
+        $product->addCategory($category1);
+        $product->addCategory($category2);
+
+        // Persister les entités
+        $manager->persist($product);
+        $manager->flush();
+    }
+}
+````
+
 ## 3. Fixtures dans OneToMany/ManyToOne
+Dans une relation OneToMany, une entité (par exemple, une ``Category``) peut être liée à plusieurs autres entités (par exemple, plusieurs ``Product``), mais chaque produit appartient à une seule catégorie.
+
+Entité ``Category`` :
+````php
+// src/Entity/Category.php
+
+namespace App\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+
+/**
+ * @ORM\Entity()
+ */
+class Category
+{
+    /**
+     * @ORM\OneToMany(targetEntity="App\Entity\Product", mappedBy="category")
+     */
+    private $products;
+
+    public function __construct()
+    {
+        $this->products = new ArrayCollection();
+    }
+
+    public function addProduct(Product $product): self
+    {
+        if (!$this->products->contains($product)) {
+            $this->products[] = $product;
+            $product->setCategory($this);
+        }
+
+        return $this;
+    }
+}
+````
+Entité ``Product`` :
+````php
+// src/Entity/Product.php
+
+namespace App\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * @ORM\Entity()
+ */
+class Product
+{
+    /**
+     * @ORM\ManyToOne(targetEntity="App\Entity\Category", inversedBy="products")
+     * @ORM\JoinColumn(nullable=false)
+     */
+    private $category;
+
+    public function setCategory(?Category $category): self
+    {
+        $this->category = $category;
+
+        return $this;
+    }
+}
+````
+**Fixture avec relation OneToMany :**
+````php
+// src/DataFixtures/AppFixtures.php
+
+namespace App\DataFixtures;
+
+use App\Entity\Product;
+use App\Entity\Category;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Persistence\ObjectManager;
+
+class AppFixtures extends Fixture
+{
+    public function load(ObjectManager $manager)
+    {
+        // Créer une catégorie
+        $category = new Category();
+        $category->setName('Electronics');
+        $manager->persist($category);
+
+        // Créer des produits
+        $product1 = new Product();
+        $product1->setName('Laptop');
+        $product1->setPrice(1200);
+        $product1->setCategory($category);
+        $manager->persist($product1);
+
+        $product2 = new Product();
+        $product2->setName('Smartphone');
+        $product2->setPrice(800);
+        $product2->setCategory($category);
+        $manager->persist($product2);
+
+        // Appliquer les changements
+        $manager->flush();
+    }
+}
+````
+
+**Fixture avec une relation ManyToOne**
+
+La relation ManyToOne est simplement l'inverse de OneToMany. Chaque produit appartient à une seule catégorie, mais une catégorie peut avoir plusieurs produits.
+
+L'exemple de relation OneToMany ci-dessus montre également un exemple de ManyToOne du point de vue de l'entité ``Product``.
+
 ## 4. Fixtures dans OneToOne
+Dans une relation OneToOne, une entité est liée à une autre entité de manière unique. Par exemple, un utilisateur peut avoir une seule adresse, et une adresse peut être liée à un seul utilisateur.
+
+Exemple d'entité ``User`` et ``Address`` :
+````php
+// src/Entity/User.php
+
+namespace App\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * @ORM\Entity()
+ */
+class User
+{
+    /**
+     * @ORM\OneToOne(targetEntity="App\Entity\Address", cascade={"persist", "remove"})
+     * @ORM\JoinColumn(nullable=false)
+     */
+    private $address;
+
+    public function setAddress(Address $address): self
+    {
+        $this->address = $address;
+
+        return $this;
+    }
+}
+````
+````php
+// src/Entity/Address.php
+
+namespace App\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * @ORM\Entity()
+ */
+class Address
+{
+    /**
+     * @ORM\OneToOne(targetEntity="App\Entity\User", mappedBy="address")
+     */
+    private $user;
+}
+````
+**Fixture avec relation OneToOne :**
+````php
+// src/DataFixtures/AppFixtures.php
+
+namespace App\DataFixtures;
+
+use App\Entity\User;
+use App\Entity\Address;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Persistence\ObjectManager;
+
+class AppFixtures extends Fixture
+{
+    public function load(ObjectManager $manager)
+    {
+        // Créer une adresse
+        $address = new Address();
+        $address->setCity('Paris');
+        $manager->persist($address);
+
+        // Créer un utilisateur
+        $user = new User();
+        $user->setName('John Doe');
+        $user->setAddress($address); // Associer l'adresse à l'utilisateur
+
+        $manager->persist($user);
+        $manager->flush();
+    }
+}
+````
 
 # Accès à la DB : DQL
 ## 1. SELECT
+> A venir
 ## 2. INSERT
+> A venir
 ## 3. UPDATE
+> A venir
 ## 4. DELETE
+> A venir
 
 # Accès à la DB : Repository
+## 1. Accès aux Repositories
+Lorsque vous créez une entité dans Symfony (par exemple avec la commande ``make:entity``), un repository est automatiquement généré dans le répertoire ``src/Repository``.
+
+Exemple de récupération d'un repository :
+````php
+$productRepository = $this->getDoctrine()->getRepository(Product::class);
+````
+
+## 2. Méthodes Prédéfinies dans un Repository
+Doctrine vous fournit plusieurs méthodes prêtes à l'emploi pour interagir avec vos entités :
+
+- ``find($id)``: Récupère une entité par son identifiant.
+- ``findAll()``: Récupère toutes les entités de la table correspondante.
+- ``findBy(array $criteria)``: Récupère les entités selon certains critères (par exemple, une colonne particulière).
+- ``findOneBy(array $criteria)``: Récupère une seule entité selon certains critères.
+- ``count(array $criteria)``: Compte le nombre d'entités correspondant à certains critères.
+
+## 3. Customiser le Repository
+En plus des méthodes par défaut, vous pouvez personnaliser un repository en ajoutant des méthodes supplémentaires qui implémentent une logique de récupération de données plus complexe. Pour ce faire, vous étendez simplement la classe repository générée par défaut.
+
+Exemple :
+````php
+// src/Repository/ProductRepository.php
+
+namespace App\Repository;
+
+use App\Entity\Product;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Persistence\ManagerRegistry;
+
+class ProductRepository extends ServiceEntityRepository
+{
+    public function __construct(ManagerRegistry $registry)
+    {
+        parent::__construct($registry, Product::class);
+    }
+
+    // Méthode personnalisée pour trouver les produits avec un prix supérieur à un certain montant
+    public function findExpensiveProducts(float $price): array
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.price > :price')
+            ->setParameter('price', $price)
+            ->getQuery()
+            ->getResult();
+    }
+}
+````
+Vous pouvez ensuite utiliser cette méthode dans un contrôleur ou un service :
+````php
+$expensiveProducts = $productRepository->findExpensiveProducts(1000);
+````
+
 # Accès à la DB : QueryBuilder
+## 1. Création d'un QueryBuilder
+Le QueryBuilder s'obtient généralement via le repository de l'entité :
+````php
+$qb = $this->getDoctrine()->getRepository(Product::class)->createQueryBuilder('p');
+````
+Dans cet exemple, ``'p'`` est un alias pour l'entité ``Product``.
+
+## 2. Construction d'une Requête avec QueryBuilder
+Le QueryBuilder fournit une API fluide pour construire des requêtes SQL. Voici un exemple de requête pour obtenir des produits avec un prix supérieur à 1000 :
+````php
+$qb = $this->getDoctrine()->getRepository(Product::class)->createQueryBuilder('p')
+    ->where('p.price > :price')
+    ->setParameter('price', 1000)
+    ->orderBy('p.price', 'DESC');
+
+$query = $qb->getQuery();
+$products = $query->getResult();
+````
+Ici, nous utilisons les méthodes ``where()``, ``setParameter()``, et ``orderBy()`` pour construire une requête qui récupère tous les produits avec un prix supérieur à 1000, triés par prix décroissant.
+
+## 3. Utiliser des Alias
+Lorsque vous travaillez avec plusieurs entités ou relations, vous pouvez utiliser des alias dans le QueryBuilder pour référencer différentes tables.
+
+Exemple de jointure entre deux entités :
+````php
+$qb = $this->getDoctrine()->getRepository(Product::class)->createQueryBuilder('p')
+    ->innerJoin('p.category', 'c') // Jointure avec l'entité Category
+    ->addSelect('c')               // Sélectionner les champs de la catégorie
+    ->where('p.price > :price')
+    ->setParameter('price', 1000)
+    ->orderBy('p.price', 'DESC');
+
+$query = $qb->getQuery();
+$products = $query->getResult();
+````
+Ici, nous faisons une jointure interne avec la table ``Category`` (``innerJoin()``), et nous ajoutons les colonnes de ``Category`` dans la requête.
+
+## 4. Pagination et Limitation
+Vous pouvez également paginer vos résultats avec ``setFirstResult()`` et ``setMaxResults()``.
+
+Exemple de pagination :
+````php
+$qb = $this->getDoctrine()->getRepository(Product::class)->createQueryBuilder('p')
+    ->where('p.price > :price')
+    ->setParameter('price', 1000)
+    ->setFirstResult(0)    // Débuter à l'enregistrement 0
+    ->setMaxResults(10);   // Limiter à 10 résultats
+
+$query = $qb->getQuery();
+$products = $query->getResult();
+````
 
 # Le formulaire
 ## 1. Création d'un formulaire simple
@@ -651,13 +1433,205 @@ Cet exemple montre comment capturer différentes exceptions et afficher des page
 ## 8. Formulaire de recherche
 
 # Entité User
+Symfony fournit un outil pour générer automatiquement une entité User avec certaines propriétés standard comme ``email``, ``password``, et ``roles`` via le bundle Symfony Security.
+
+Vous pouvez créer une entité ``User`` en exécutant la commande suivante :
+````powershell
+symfony console make:user
+````
+Cela va générer une classe ``User`` avec les propriétés nécessaires. Voici un exemple de ce à quoi pourrait ressembler une entité ``User`` :
+````php
+// src/Entity/User.php
+
+namespace App\Entity;
+
+use Symfony\Component\Security\Core\User\UserInterface;
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * @ORM\Entity()
+ */
+class User implements UserInterface
+{
+    /**
+     * @ORM\Id
+     * @ORM\GeneratedValue
+     * @ORM\Column(type="integer")
+     */
+    private $id;
+
+    /**
+     * @ORM\Column(type="string", length=180, unique=true)
+     */
+    private $email;
+
+    /**
+     * @ORM\Column(type="json")
+     */
+    private $roles = [];
+
+    /**
+     * @ORM\Column(type="string")
+     */
+    private $password;
+
+    // Getters et setters...
+
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        // Assure que tous les utilisateurs ont le rôle "ROLE_USER"
+        if (!in_array('ROLE_USER', $roles)) {
+            $roles[] = 'ROLE_USER';
+        }
+
+        return $roles;
+    }
+
+    public function setPassword(string $password): self
+    {
+        $this->password = $password;
+
+        return $this;
+    }
+    
+    // Autres méthodes de UserInterface...
+}
+````
 
 # Authentification
 ## 1. Inscription
+Étapes de base :
+
+- Créez un formulaire d'inscription pour collecter les informations utilisateur.
+- Hash le mot de passe avec un password encoder avant de le stocker dans la base de données.
+- Persister les données de l'utilisateur dans la base de données.
+
+````php
+// Controller d'inscription
+public function register(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager)
+{
+    $user = new User();
+    $form = $this->createForm(RegistrationFormType::class, $user);
+    $form->handleRequest($request);
+
+    if ($form->isSubmitted() && $form->isValid()) {
+        // Hashage du mot de passe
+        $user->setPassword(
+            $passwordHasher->hashPassword(
+                $user,
+                $form->get('plainPassword')->getData()
+            )
+        );
+        
+        // Persister le nouvel utilisateur
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        return $this->redirectToRoute('app_home');
+    }
+
+    return $this->render('registration/register.html.twig', [
+        'registrationForm' => $form->createView(),
+    ]);
+}
+````
 ## 2. Connexion
+Symfony gère l'authentification via un firewall (pare-feu) qui contrôle les accès et permet la connexion.
+
+Pour la connexion d’un utilisateur, Symfony utilise généralement un formulaire de connexion ou un système de token (comme JWT pour les API).
+
+````php
+// Controller de connexion
+public function login(AuthenticationUtils $authenticationUtils): Response
+{
+    // Récupérer une erreur de connexion s'il y en a
+    $error = $authenticationUtils->getLastAuthenticationError();
+    
+    // Dernier nom d'utilisateur saisi
+    $lastUsername = $authenticationUtils->getLastUsername();
+
+    return $this->render('security/login.html.twig', [
+        'last_username' => $lastUsername,
+        'error' => $error,
+    ]);
+}
+````
+Ensuite, vous devez configurer le fichier de sécurité ``security.yaml`` pour indiquer les routes de connexion/déconnexion et les règles de protection des pages.
+````yaml
+# config/packages/security.yaml
+firewalls:
+    main:
+        pattern: ^/
+        form_login:
+            login_path: login
+            check_path: login
+        logout:
+            path: logout
+````
+
 ## 3. Déconnexion
+La déconnexion est une action simple dans Symfony. Elle est configurée dans le fichier ``security.yaml`` avec la route de déconnexion.
+````yaml
+# config/packages/security.yaml
+firewalls:
+    main:
+        logout:
+            path: app_logout
+            target: homepage
+````
+Ici, la route ``/logout`` est définie pour déconnecter l'utilisateur et le rediriger vers la page d'accueil (``homepage``).
+
 ## 4. Rôles
+Les rôles dans Symfony permettent de définir des permissions pour chaque utilisateur. Un utilisateur peut avoir plusieurs rôles, définis dans son entité sous forme d’un tableau (``roles``).
+
+Exemple de rôles :
+
+- ROLE_USER : rôle de base pour tous les utilisateurs.
+- ROLE_ADMIN : rôle administrateur avec des permissions étendues.
+Vous pouvez contrôler l'accès à certaines routes ou actions en fonction des rôles dans le fichier security.yaml ou dans les contrôleurs.
+
+````yaml
+# config/packages/security.yaml
+access_control:
+    - { path: ^/admin, roles: ROLE_ADMIN }
+````
+
+Cela signifie que seules les personnes avec le rôle ``ROLE_ADMIN`` peuvent accéder aux pages dont l'URL commence par ``/admin``.
+
+Dans les contrôleurs, vous pouvez utiliser des annotations pour restreindre l'accès :
+````php
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
+
+/**
+ * @IsGranted("ROLE_ADMIN")
+ */
+public function adminPage()
+{
+    // Code de la page admin
+}
+````
+
 ## 5. Sécurité
+La sécurité est un aspect crucial lors de la gestion des utilisateurs dans Symfony. Voici quelques bonnes pratiques :
+
+**Hashage des mots de passe :** Les mots de passe doivent toujours être stockés de manière sécurisée avec un algorithme de hashage (comme bcrypt ou Argon2i).
+
+Exemple avec le service ``UserPasswordHasherInterface`` :
+````php
+$hashedPassword = $passwordHasher->hashPassword($user, $plainPassword);
+````
+**Contrôle d'accès :** Utilisez le fichier security.yaml pour définir les firewalls et les access_control. Vous pouvez aussi utiliser des annotations dans vos contrôleurs pour restreindre l’accès à certaines actions.
+
+**Protection CSRF :** Assurez-vous que les formulaires de connexion et d'inscription sont protégés contre les attaques CSRF en incluant des tokens CSRF.
+````php
+$builder->add('_csrf_token', CsrfTokenType::class);
+````
+**Limitation des accès sensibles :** Utilisez les rôles pour protéger les routes sensibles et éviter qu’un utilisateur sans privilège y accède.
+
+**Authentification à deux facteurs (2FA) :** Vous pouvez améliorer la sécurité en intégrant un système d'authentification à deux facteurs (2FA).
+
+
 
 # Response JSON
 
