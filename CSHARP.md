@@ -804,3 +804,380 @@ public class Voiture : Vehicule
 ````
 
 En utilisant ``override``, ``Voiture`` peut remplacer le comportement de ``Rouler`` de ``Vehicule``.
+
+## 5. Interfaces et Classes Abstraites
+
+### a. Interfaces
+Une interface définit un ensemble de méthodes et propriétés sans implémentation. Les classes qui implémentent l'interface doivent fournir une implémentation pour ces membres.
+
+````cs
+public interface IVehicule
+{
+    void Demarrer();
+}
+
+public class Voiture : IVehicule
+{
+    public void Demarrer()
+    {
+        Console.WriteLine("La voiture démarre.");
+    }
+}
+````
+
+``Voiture`` doit implémenter la méthode ``Demarrer``.
+
+### b. Classes Abstraites
+Une classe abstraite est une classe partiellement implémentée qui ne peut pas être instanciée. Elle peut contenir des méthodes abstraites (sans corps) que les classes dérivées doivent implémenter.
+
+````cs
+public abstract class Animal
+{
+    public abstract void Crier();
+}
+
+public class Chien : Animal
+{
+    public override void Crier()
+    {
+        Console.WriteLine("Le chien aboie.");
+    }
+}
+````
+
+Ici, ``Animal`` est abstrait et ``Chien`` fournit une implémentation pour ``Crier``.
+
+## 6. Le Mot-clé this
+
+Le mot-clé ``this`` fait référence à l'instance actuelle de la classe. Il est souvent utilisé pour désambiguïser entre les champs de la classe et les paramètres de la méthode ayant le même nom.
+
+**Exemple**
+
+````cs
+public class Voiture
+{
+    private string marque;
+
+    public Voiture(string marque)
+    {
+        this.marque = marque; // `this.marque` fait référence au champ, `marque` au paramètre
+    }
+}
+````
+
+Ici, ``this.marque`` fait référence au champ ``marque`` de l’instance de la classe, alors que ``marque`` se réfère au paramètre du constructeur.
+
+## 7. Exemple Complet
+
+````cs
+using System;
+
+public abstract class Animal
+{
+    public string Nom { get; set; }
+    public abstract void Crier();
+}
+
+public class Chien : Animal
+{
+    public override void Crier()
+    {
+        Console.WriteLine($"{Nom} aboie !");
+    }
+}
+
+public class Chat : Animal
+{
+    public override void Crier()
+    {
+        Console.WriteLine($"{Nom} miaule !");
+    }
+}
+
+public interface IVehicule
+{
+    void Demarrer();
+}
+
+public class Voiture : IVehicule
+{
+    public void Demarrer()
+    {
+        Console.WriteLine("La voiture démarre.");
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        Animal chien = new Chien { Nom = "Rex" };
+        chien.Crier(); // Affiche : "Rex aboie !"
+
+        Animal chat = new Chat { Nom = "Luna" };
+        chat.Crier(); // Affiche : "Luna miaule !"
+
+        IVehicule voiture = new Voiture();
+        voiture.Demarrer(); // Affiche : "La voiture démarre."
+    }
+}
+````
+
+
+# Types Avancés et Collections
+## 1. Tableaux (``array``)
+Les tableaux en C# sont des structures de données qui permettent de stocker plusieurs éléments du même type dans une séquence. Ils sont de taille fixe, c'est-à-dire que leur taille est déterminée lors de leur création et ne peut pas être modifiée par la suite.
+
+### a. Déclaration et initialisation d'un tableau :
+
+````cs
+int[] nombres = new int[5];  // Déclare un tableau de 5 entiers
+nombres[0] = 10;             // Initialise la première valeur du tableau
+nombres[1] = 20;             // Initialise la deuxième valeur du tableau
+````
+
+- Un tableau en C# peut contenir des éléments de n'importe quel type (entiers, chaînes de caractères, objets, etc.).
+- Les indices des tableaux commencent toujours à 0.
+
+**Exemple de tableau multidimensionnel (matrice)**
+
+Un tableau multidimensionnel peut être utilisé pour des structures comme des matrices.
+
+````cs
+int[,] matrice = new int[2, 3];  // Tableau à 2 lignes et 3 colonnes
+matrice[0, 0] = 1;
+matrice[0, 1] = 2;
+matrice[0, 2] = 3;
+matrice[1, 0] = 4;
+matrice[1, 1] = 5;
+matrice[1, 2] = 6;
+````
+
+### b. Limitations des tableaux :
+La taille des tableaux est fixe après leur création. Si vous avez besoin d'une taille dynamique, des collections comme ``List<T>`` ou ``ArrayList`` seront plus adaptées.
+
+## 2. Listes (List<T>) et autres collections génériques
+Les collections génériques en C# offrent une plus grande flexibilité que les tableaux, notamment en permettant des tailles dynamiques et en fournissant des méthodes utiles pour ajouter, supprimer ou trier les éléments.
+
+### a. Listes (``List<T>``)
+Une ``List<T>`` est une collection générique qui peut contenir des éléments de n'importe quel type spécifié (``T``). Contrairement aux tableaux, une liste peut croître ou se rétrécir en fonction des besoins.
+
+**Exemple**
+
+````cs
+List<int> nombres = new List<int>();  // Crée une liste vide de types entiers
+nombres.Add(10);                      // Ajoute un élément
+nombres.Add(20);
+nombres.Add(30);
+
+Console.WriteLine(nombres[1]);        // Affiche 20
+nombres.Remove(20);                   // Supprime l'élément 20
+````
+
+**Méthodes courantes**
+
+- ``Add(T item)``: Ajoute un élément à la fin de la liste.
+- ``Remove(T item)``: Supprime le premier élément qui correspond à l'élément spécifié.
+- ``Count``: Obtient le nombre d'éléments dans la liste.
+- ``Sort()``: Trie les éléments de la liste.
+
+### b. Dictionnaires (``Dictionary<TKey, TValue>``)
+Un ``Dictionary<TKey, TValue>`` est une collection générique qui associe une clé (``TKey``) à une valeur (``TValue``). Chaque clé est unique et permet d'accéder rapidement à la valeur associée.
+
+**Exemple**
+
+````cs
+Dictionary<string, int> ages = new Dictionary<string, int>();
+ages.Add("Alice", 30);
+ages.Add("Bob", 25);
+
+Console.WriteLine(ages["Alice"]);  // Affiche 30
+````
+
+**Méthodes courantes**
+- ``Add(TKey key, TValue value)``: Ajoute une nouvelle paire clé-valeur.
+- ``ContainsKey(TKey key)``: Vérifie si une clé existe dans le dictionnaire.
+- ``Remove(TKey key)``: Supprime une entrée par clé.
+- ``Keys``: Obtient toutes les clés du dictionnaire.
+- ``Values``: Obtient toutes les valeurs du dictionnaire.
+
+**Autres collections génériques**
+- ``Queue<T>`` : Représente une file d'attente (FIFO). Les éléments sont ajoutés à la fin et retirés du début.
+- ``Stack<T>`` : Représente une pile (LIFO). Les éléments sont ajoutés et retirés du haut de la pile.
+
+**Exemple de Queue**
+
+````cs
+Queue<string> queue = new Queue<string>();
+queue.Enqueue("A");
+queue.Enqueue("B");
+queue.Enqueue("C");
+
+Console.WriteLine(queue.Dequeue());  // Affiche "A"
+````
+
+**Exemple de Stack**
+
+````cs
+Stack<string> stack = new Stack<string>();
+stack.Push("X");
+stack.Push("Y");
+stack.Push("Z");
+
+Console.WriteLine(stack.Pop());  // Affiche "Z"
+````
+
+## 3. Collections non génériques
+Les collections non génériques étaient utilisées avant l'introduction des collections génériques en C#. Elles offrent moins de sécurité de type et sont moins efficaces que les collections génériques. Cependant, elles peuvent encore être utilisées dans certains cas où une flexibilité de type est requise.
+
+### a. ``ArrayList``
+Un ``ArrayList`` est similaire à une ``List<T>``, mais il ne spécifie pas de type pour les éléments, ce qui permet de stocker des objets de types différents. Cela peut poser des risques en termes de performance et de sécurité des types.
+
+**Exemple**
+
+````cs
+ArrayList list = new ArrayList();
+list.Add(10);
+list.Add("Hello");
+list.Add(true);
+
+Console.WriteLine(list[0]);  // Affiche 10
+Console.WriteLine(list[1]);  // Affiche "Hello"
+````
+
+Les éléments dans un ``ArrayList`` peuvent être de n'importe quel type, mais vous devrez effectuer des conversions (cast) lorsque vous les récupérez.
+
+``Hashtable``
+Un ``Hashtable`` est similaire à un ``Dictionary<TKey, TValue>``, mais contrairement au Dictionary, il peut contenir des clés et des valeurs de n'importe quel type. Il est également moins performant en raison de la gestion des types non spécifiés.
+
+**Exemple**
+
+````cs
+Hashtable hashtable = new Hashtable();
+hashtable.Add("clé1", "valeur1");
+hashtable.Add("clé2", 123);
+
+Console.WriteLine(hashtable["clé1"]);  // Affiche "valeur1"
+Console.WriteLine(hashtable["clé2"]);  // Affiche 123
+````
+
+Comme avec l'``ArrayList``, les ``Hashtable`` sont moins sûrs que les versions génériques comme ``Dictionary``.
+
+## 4. Types de collections immuables
+Les collections immuables ne peuvent pas être modifiées après leur création. En C#, ces collections sont souvent utilisées pour des raisons de sécurité et de performance, en particulier dans des environnements où l'état des données doit être garanti comme constant.
+
+**Exemple de collection immuable**
+
+````cs
+using System.Collections.Immutable;
+
+var liste = ImmutableList<int>.Empty
+    .Add(1)
+    .Add(2)
+    .Add(3);
+
+Console.WriteLine(liste[0]);  // Affiche 1
+````
+
+- ``ImmutableList<T>`` : Une version immuable de ``List<T>``. Une fois une valeur ajoutée, la liste ne peut plus être modifiée.
+- ``ImmutableDictionary<TKey, TValue>`` : Une version immuable de ``Dictionary<TKey, TValue>``.
+- ``ImmutableArray<T>`` : Une version immuable de ``Array``.
+
+Les collections immuables sont particulièrement utiles dans des scénarios multithreads, car elles garantissent que les données ne changent pas pendant que plusieurs threads les utilisent.
+
+## 5. Résumé des collections en C#
+
+| Type de collection  |  Description |  Utilisation |
+|:--|:--|:--|
+| ``Array``  | Tableau de taille fixe.  | Utilisé pour des ensembles de données de taille connue.  |
+| ``List<T>``  |  Liste dynamique avec des méthodes pratiques. |  Utilisé pour des données dynamiques avec des types spécifiques. |
+| ``Dictionary<TKey, TValue>``  | Table de hachage associant des clés à des valeurs.  | Utilisé pour rechercher rapidement des éléments via une clé unique.  |
+| ``Queue<T>``  | File d'attente (FIFO).  | Utilisé pour les files d'attente.  |
+| ``Stack<T>``  | Pile (LIFO).  | Utilisé pour les piles.  |
+| ``ArrayList``  | Liste dynamique non typée.  | Utilisé lorsque vous avez besoin de flexibilité avec les types.  |
+| ``Hashtable``  | Table de hachage non typée.  | Utilisé pour stocker des paires clé-valeur sans type spécifique.  |
+| ``ImmutableList<T>``  | Liste immuable.  | Utilisé lorsque vous avez besoin de garantir que la collection ne changera pas.  |
+
+		
+# Gestion des Erreurs et Exceptions
+## 1. Blocs ``try-catch-finally``
+Le mécanisme principal pour gérer les erreurs en C# est l'utilisation des blocs try-catch-finally. Ce mécanisme permet de capturer et de traiter les erreurs tout en continuant l'exécution du programme de manière contrôlée.
+
+**Structure générale**
+
+````cs
+try
+{
+    // Code susceptible de générer une exception
+}
+catch (ExceptionType1 ex)
+{
+    // Code pour traiter l'exception de type ExceptionType1
+}
+catch (ExceptionType2 ex)
+{
+    // Code pour traiter l'exception de type ExceptionType2
+}
+finally
+{
+    // Code qui s'exécute toujours, qu'il y ait eu une exception ou non
+}
+````
+
+- ``try`` : Le code qui pourrait générer une exception est placé dans ce bloc.
+- ``catch`` : Si une exception est lancée dans le bloc ``try``, le contrôle passe dans le bloc ``catch`` où vous pouvez traiter l'erreur.
+- ``finally`` : Ce bloc est toujours exécuté, qu'une exception soit levée ou non. Il est souvent utilisé pour libérer des ressources (fermeture de fichiers, déconnexion de bases de données, etc.).
+
+**Exemple**
+
+````cs
+try
+{
+    int a = 10;
+    int b = 0;
+    int resultat = a / b;  // Cette ligne provoque une exception
+}
+catch (DivideByZeroException ex)
+{
+    Console.WriteLine("Erreur: Division par zéro!");
+}
+finally
+{
+    Console.WriteLine("Bloc finally toujours exécuté.");
+}
+````
+
+Dans cet exemple, une ``DivideByZeroException`` est levée dans le bloc ``try``, et le contrôle passe dans le bloc ``catch`` où l'erreur est traitée. Le bloc ``finally`` est exécuté à la fin, même si une exception a été capturée.
+
+## 2. Création et Levée d'Exceptions (``throw``)
+
+C# permet de lever (ou "jeter") des exceptions de manière explicite en utilisant le mot-clé ``throw``. Cela permet de signaler qu'un problème s'est produit et de transmettre des informations sur l'erreur, que ce soit à l'intérieur d'un programme ou pour interagir avec un appelant (comme une fonction principale).
+
+**Syntaxe de ``throw``**
+
+````cs
+throw new Exception("Message d'erreur");
+````
+
+**Exemple**
+````cs
+public void Diviser(int a, int b)
+{
+    if (b == 0)
+    {
+        throw new DivideByZeroException("Erreur: Impossible de diviser par zéro.");
+    }
+    Console.WriteLine(a / b);
+}
+````
+
+Dans cet exemple, si ``b`` est égal à zéro, une ``DivideByZeroException`` est levée avec un message personnalisé.
+
+**Types d'exceptions courantes**
+
+- ``ArgumentNullException`` : Levée lorsqu'un argument de méthode est nul alors qu'il ne devrait pas l'être.
+- ``DivideByZeroException`` : Levée lorsqu'une division par zéro est tentée.
+- ``FileNotFoundException`` : Levée lorsqu'un fichier spécifié est introuvable.
+- ``IndexOutOfRangeException`` : Levée lorsqu'un indice hors des limites d'un tableau ou d'une collection est utilisé.
+
+Vous pouvez aussi créer des exceptions personnalisées en créant une classe qui hérite de la classe de base ``Exception``.
