@@ -593,7 +593,7 @@ public class Calculatrice
 int resultat = Calculatrice.Additionner(5, 10);  // resultat vaut 15
 ````
 
-## 5 Exemple Complet
+## 5. Exemple Complet
 
 ````cs
 using System;
@@ -727,3 +727,80 @@ public class Personne
 
 ### c. Méthodes
 Les méthodes sont des fonctions définies dans une classe, décrivant les actions qu'un objet peut réaliser.
+
+## 3. Constructeurs et Destructeurs
+
+### a. Constructeurs
+Les constructeurs sont des méthodes spéciales utilisées pour initialiser un nouvel objet. Ils portent le même nom que la classe et n’ont pas de type de retour.
+
+````cs
+public class Voiture
+{
+    public string Marque;
+    public string Modele;
+
+    // Constructeur
+    public Voiture(string marque, string modele)
+    {
+        Marque = marque;
+        Modele = modele;
+    }
+}
+````
+
+Utilisation du constructeur :
+
+````cs
+Voiture voiture1 = new Voiture("Toyota", "Corolla");
+````
+
+### b. Destructeurs
+Les destructeurs sont utilisés pour libérer les ressources lorsqu'un objet est supprimé. En C#, les destructeurs sont rarement nécessaires, car le ramasse-miettes (garbage collector) gère la libération de la mémoire automatiquement.
+````cs
+~Voiture()
+{
+    // Code pour nettoyer les ressources
+}
+````
+
+## 4. Héritage et Polymorphisme
+### a. Héritage
+L'héritage permet de créer une nouvelle classe qui reprend les propriétés et méthodes d'une classe existante. En C#, une classe peut hériter d'une seule autre classe.
+
+````cs
+public class Vehicule
+{
+    public int Vitesse { get; set; }
+    public void Rouler() => Console.WriteLine("Le véhicule roule.");
+}
+
+public class Voiture : Vehicule
+{
+    public string Modele { get; set; }
+}
+````
+
+Ici, ``Voiture`` hérite de ``Vehicule``, et possède donc la propriété ``Vitesse`` et la méthode ``Rouler``.
+
+### b. Polymorphisme
+Le polymorphisme permet d’utiliser une méthode de différentes manières selon l'objet. En C#, le polymorphisme se réalise souvent avec l’héritage et les méthodes virtuelles.
+
+````cs
+public class Vehicule
+{
+    public virtual void Rouler()
+    {
+        Console.WriteLine("Le véhicule roule.");
+    }
+}
+
+public class Voiture : Vehicule
+{
+    public override void Rouler()
+    {
+        Console.WriteLine("La voiture roule.");
+    }
+}
+````
+
+En utilisant ``override``, ``Voiture`` peut remplacer le comportement de ``Rouler`` de ``Vehicule``.
